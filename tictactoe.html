@@ -113,6 +113,25 @@
             background: rgba(53, 208, 127, 0.16);
         }
 
+        .score-row {
+            width: min(100%, 390px);
+            margin: 0 auto 18px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .score-row span {
+            min-height: 38px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
         .actions {
             margin-top: 22px;
             display: flex;
@@ -148,6 +167,12 @@
         <h1>Tic Tac Toe</h1>
         <div id="status">Player X's turn</div>
 
+        <div class="score-row" aria-label="Scoreboard">
+            <span id="scoreX">X: 0</span>
+            <span id="scoreO">O: 0</span>
+            <span id="scoreDraw">Draws: 0</span>
+        </div>
+
         <section class="board" id="board" aria-label="Tic Tac Toe board">
             <button class="cell" data-index="0" type="button" aria-label="Cell 1"></button>
             <button class="cell" data-index="1" type="button" aria-label="Cell 2"></button>
@@ -169,10 +194,16 @@
         const cells = document.querySelectorAll(".cell");
         const statusText = document.getElementById("status");
         const restartBtn = document.getElementById("restartBtn");
+        const scoreXText = document.getElementById("scoreX");
+        const scoreOText = document.getElementById("scoreO");
+        const scoreDrawText = document.getElementById("scoreDraw");
 
         let board = ["", "", "", "", "", "", "", "", ""];
         let currentPlayer = "X";
         let gameActive = true;
+        let scoreX = 0;
+        let scoreO = 0;
+        let draws = 0;
 
         const winPatterns = [
             [0, 1, 2],
@@ -190,6 +221,14 @@
         });
 
         restartBtn.addEventListener("click", restartGame);
+
+        document.addEventListener("keydown", (event) => {
+            const cellNumber = Number(event.key);
+
+            if (cellNumber >= 1 && cellNumber <= 9) {
+                cells[cellNumber - 1].click();
+            }
+        });
 
         function handleCellClick() {
             const index = Number(this.dataset.index);
@@ -214,12 +253,20 @@
             if (winningPattern) {
                 winningPattern.forEach((index) => cells[index].classList.add("win"));
                 statusText.textContent = `Player ${currentPlayer} wins`;
+                if (currentPlayer === "X") {
+                    scoreX += 1;
+                } else {
+                    scoreO += 1;
+                }
+                updateScoreboard();
                 gameActive = false;
                 return;
             }
 
             if (!board.includes("")) {
                 statusText.textContent = "It is a draw";
+                draws += 1;
+                updateScoreboard();
                 gameActive = false;
                 return;
             }
@@ -238,6 +285,12 @@
                 cell.textContent = "";
                 cell.classList.remove("x", "o", "win");
             });
+        }
+
+        function updateScoreboard() {
+            scoreXText.textContent = `X: ${scoreX}`;
+            scoreOText.textContent = `O: ${scoreO}`;
+            scoreDrawText.textContent = `Draws: ${draws}`;
         }
     </script>
 </body>

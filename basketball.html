@@ -154,6 +154,7 @@
 
         <div class="score-row">
             <span id="score">Score: 0</span>
+            <span id="bestScore">Best: 0</span>
             <span id="status">Choose angle and power</span>
         </div>
 
@@ -182,6 +183,7 @@
         const canvas = document.getElementById("game");
         const ctx = canvas.getContext("2d");
         const scoreText = document.getElementById("score");
+        const bestScoreText = document.getElementById("bestScore");
         const statusText = document.getElementById("status");
         const shootBtn = document.getElementById("shootBtn");
         const restartBtn = document.getElementById("restartBtn");
@@ -200,7 +202,9 @@
         };
 
         const ballRadius = 12;
+        const bestScoreKey = "basketballBestScore";
         let score = 0;
+        let bestScore = Number(localStorage.getItem(bestScoreKey)) || 0;
         let shotActive = false;
         let position;
         let velocity;
@@ -217,12 +221,16 @@
         function updateLabels() {
             angleValue.textContent = `${angleInput.value}°`;
             powerValue.textContent = powerInput.value;
+            if (!shotActive) {
+                drawScene();
+            }
         }
 
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawCourt();
             drawHoop();
+            drawAimGuide();
             drawBall();
         }
 
@@ -272,6 +280,33 @@
             ctx.stroke();
         }
 
+        function drawAimGuide() {
+            if (shotActive) {
+                return;
+            }
+
+            const angle = Number(angleInput.value) * (Math.PI / 180);
+            const power = Number(powerInput.value);
+            const speed = power * 0.85;
+            let guideX = position.x;
+            let guideY = position.y;
+            let guideVX = Math.cos(angle) * speed;
+            let guideVY = -Math.sin(angle) * speed;
+
+            ctx.fillStyle = "rgba(53, 208, 127, 0.45)";
+            for (let i = 0; i < 34; i += 1) {
+                guideX += guideVX;
+                guideY += guideVY;
+                guideVY += 0.55;
+
+                if (i % 3 === 0) {
+                    ctx.beginPath();
+                    ctx.arc(guideX, guideY, 2.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
         function shoot() {
             if (shotActive) {
                 return;
@@ -303,6 +338,7 @@
             if (hasScored()) {
                 score += 1;
                 scoreText.textContent = `Score: ${score}`;
+                updateBestScore();
                 endShot("Nice shot!");
                 return;
             }
@@ -336,7 +372,18 @@
         function restartGame() {
             score = 0;
             scoreText.textContent = "Score: 0";
+            bestScoreText.textContent = `Best: ${bestScore}`;
             resetBall();
+        }
+
+        function updateBestScore() {
+            if (score <= bestScore) {
+                return;
+            }
+
+            bestScore = score;
+            localStorage.setItem(bestScoreKey, String(bestScore));
+            bestScoreText.textContent = `Best: ${bestScore}`;
         }
 
         angleInput.addEventListener("input", updateLabels);
@@ -352,6 +399,7 @@
         });
 
         updateLabels();
+        bestScoreText.textContent = `Best: ${bestScore}`;
         resetBall();
     </script>
 </body>

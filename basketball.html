@@ -252,22 +252,28 @@
             width: 88,
             height: 10,
             rimRadius: 4,
-            netHeight: 28
+            netHeight: 30
         };
 
-        const ballRadius = 12;
+        const ballRadius = 16;
+        const gravity = 0.38;
+        const speedFactor = 1.32;
         const bestScoreKey = "basketballBestScore";
         let score = 0;
         let bestScore = Number(localStorage.getItem(bestScoreKey)) || 0;
         let shotActive = false;
+        let scored = false;
+        let scoreFrames = 0;
         let position;
         let velocity;
         let animationFrame;
 
         function resetBall() {
-            position = { x: 80, y: 342 };
+            position = { x: 80, y: 348 };
             velocity = { x: 0, y: 0 };
             shotActive = false;
+            scored = false;
+            scoreFrames = 0;
             statusText.textContent = "Choose angle and power";
             drawScene();
         }
@@ -285,7 +291,45 @@
             drawCourt();
             drawHoop();
             drawAimGuide();
+            drawNetBack();
             drawBall();
+            drawNetFront();
+        }
+
+        function drawNetBack() {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(hoop.x + 10, hoop.y + hoop.height + 4);
+            ctx.lineTo(hoop.x + 26, hoop.y + hoop.height + 16);
+            ctx.lineTo(hoop.x + 42, hoop.y + hoop.height + 4);
+            ctx.lineTo(hoop.x + 58, hoop.y + hoop.height + 16);
+            ctx.stroke();
+        }
+
+        function drawNetFront() {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(hoop.x + 8, hoop.y + hoop.height);
+            ctx.lineTo(hoop.x + 14, hoop.y + hoop.height + hoop.netHeight - 2);
+            ctx.lineTo(hoop.x + 22, hoop.y + hoop.height);
+            ctx.moveTo(hoop.x + 28, hoop.y + hoop.height + hoop.netHeight - 2);
+            ctx.lineTo(hoop.x + 38, hoop.y + hoop.height);
+            ctx.moveTo(hoop.x + 48, hoop.y + hoop.height + hoop.netHeight - 2);
+            ctx.lineTo(hoop.x + 58, hoop.y + hoop.height);
+            ctx.moveTo(hoop.x + 68, hoop.y + hoop.height + hoop.netHeight - 2);
+            ctx.lineTo(hoop.x + 76, hoop.y + hoop.height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(hoop.x + 15, hoop.y + hoop.height + 3);
+            ctx.lineTo(hoop.x + 23, hoop.y + hoop.height + 13);
+            ctx.lineTo(hoop.x + 31, hoop.y + hoop.height + 3);
+            ctx.lineTo(hoop.x + 39, hoop.y + hoop.height + 13);
+            ctx.lineTo(hoop.x + 47, hoop.y + hoop.height + 3);
+            ctx.lineTo(hoop.x + 55, hoop.y + hoop.height + 13);
+            ctx.lineTo(hoop.x + 63, hoop.y + hoop.height + 3);
+            ctx.stroke();
         }
 
         function drawCourt() {
@@ -311,10 +355,18 @@
             ctx.moveTo(hoop.x + 8, hoop.y + hoop.height);
             ctx.lineTo(hoop.x + 18, hoop.y + hoop.height + hoop.netHeight);
             ctx.lineTo(hoop.x + 28, hoop.y + hoop.height);
-            ctx.lineTo(hoop.x + 38, hoop.y + hoop.height + hoop.netHeight);
+            ctx.moveTo(hoop.x + 38, hoop.y + hoop.height + hoop.netHeight);
             ctx.lineTo(hoop.x + 48, hoop.y + hoop.height);
-            ctx.lineTo(hoop.x + 58, hoop.y + hoop.height + hoop.netHeight);
+            ctx.moveTo(hoop.x + 58, hoop.y + hoop.height + hoop.netHeight);
             ctx.lineTo(hoop.x + 68, hoop.y + hoop.height);
+            ctx.stroke();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(hoop.x + 10, hoop.y + hoop.height + 5);
+            ctx.lineTo(hoop.x + 26, hoop.y + hoop.height + 17);
+            ctx.lineTo(hoop.x + 42, hoop.y + hoop.height + 5);
+            ctx.lineTo(hoop.x + 58, hoop.y + hoop.height + 17);
             ctx.stroke();
         }
 
@@ -387,7 +439,7 @@
 
             const angle = Number(angleInput.value) * (Math.PI / 180);
             const power = Number(powerInput.value);
-            const speed = power * 0.85;
+            const speed = power * speedFactor;
             let guideX = position.x;
             let guideY = position.y;
             let guideVX = Math.cos(angle) * speed;
@@ -414,13 +466,15 @@
 
             const angle = Number(angleInput.value) * (Math.PI / 180);
             const power = Number(powerInput.value);
-            const speed = power * 0.85;
+            const speed = power * speedFactor;
 
             velocity = {
                 x: Math.cos(angle) * speed,
-                y: -Math.sin(angle) * speed
+                y: -Math.sin(angle) * speed - 1.4
             };
 
+            scored = false;
+            scoreFrames = 0;
             shotActive = true;
             statusText.textContent = "Shooting...";
             animationFrame = requestAnimationFrame(animateShot);
@@ -433,17 +487,23 @@
 
             position.x += velocity.x;
             position.y += velocity.y;
-            velocity.y += 0.55;
+            velocity.y += gravity;
 
-            if (hasScored()) {
+            if (!scored && hasScored()) {
+                scored = true;
                 score += 1;
                 scoreText.textContent = `Score: ${score}`;
                 updateBestScore();
-                endShot("Nice shot!");
-                return;
+                statusText.textContent = "Nice shot!";
             }
 
-            if (position.y + ballRadius >= 378 || position.x > canvas.width + ballRadius || position.x < -ballRadius) {
+            if (scored) {
+                scoreFrames += 1;
+                if (scoreFrames > 28) {
+                    endShot("Nice shot!");
+                    return;
+                }
+            } else if (position.y + ballRadius >= 378 || position.x > canvas.width + ballRadius || position.x < -ballRadius) {
                 endShot("Missed. Try again.");
                 return;
             }
@@ -454,7 +514,7 @@
 
         function hasScored() {
             const inHoopX = position.x > hoop.x + 12 && position.x < hoop.x + hoop.width - 12;
-            const inHoopY = position.y > hoop.y + hoop.height && position.y < hoop.y + hoop.height + hoop.netHeight + 10;
+            const inHoopY = position.y > hoop.y + hoop.height - ballRadius / 2 && position.y < hoop.y + hoop.height + hoop.netHeight + ballRadius;
             return inHoopX && inHoopY && velocity.y > 0;
         }
 

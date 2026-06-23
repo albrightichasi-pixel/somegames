@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basketball Shootout</title>
+
+    <style>
+        :root {
+            --bg: #111315;
+            --panel: #1c2126;
+            --text: #f5f8fa;
+            --muted: #a9b4bc;
+            --accent: #35d07f;
+            --accent-dark: #26b86c;
+            --line: #35404a;
+            --court: #1b2328;
+            --hoop: #d94532;
+            --net: rgba(255, 255, 255, 0.84);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(53, 208, 127, 0.14), transparent 32rem),
+                linear-gradient(135deg, #101214 0%, var(--bg) 58%, #171b20 100%);
+        }
+
+        main {
+            width: min(100%, 520px);
+            text-align: center;
+        }
+
+        nav {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        nav a {
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        nav a:hover {
+            color: var(--accent);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2rem, 8vw, 3.4rem);
+            letter-spacing: 0;
+        }
+
+        .score-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 14px auto 18px;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        canvas {
+            width: min(100%, 420px);
+            aspect-ratio: 1;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            background: var(--court);
+            border: 2px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
+        }
+
+        .controls {
+            margin-top: 18px;
+            display: grid;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .control-row {
+            display: grid;
+            gap: 10px;
+        }
+
+        .control-row label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            min-height: 46px;
+            padding: 0 20px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #09120d;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--accent-dark);
+        }
+
+        .hint {
+            margin: 14px auto 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.45;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <nav>
+            <a href="games.html">Back to games</a>
+        </nav>
+
+        <h1>Basketball Shootout</h1>
+
+        <div class="score-row">
+            <span id="score">Score: 0</span>
+            <span id="status">Choose angle and power</span>
+        </div>
+
+        <canvas id="game" width="400" height="400" aria-label="Basketball shootout court"></canvas>
+
+        <div class="controls">
+            <div class="control-row">
+                <label for="angle">Angle <span id="angleValue">45°</span></label>
+                <input id="angle" type="range" min="20" max="70" value="45">
+            </div>
+            <div class="control-row">
+                <label for="power">Power <span id="powerValue">14</span></label>
+                <input id="power" type="range" min="8" max="18" value="14">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="shootBtn" type="button">Shoot</button>
+            <button id="restartBtn" type="button">Reset</button>
+        </div>
+
+        <p class="hint">Press Space to shoot, or adjust angle and power before each attempt.</p>
+    </main>
+
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+        const scoreText = document.getElementById("score");
+        const statusText = document.getElementById("status");
+        const shootBtn = document.getElementById("shootBtn");
+        const restartBtn = document.getElementById("restartBtn");
+        const angleInput = document.getElementById("angle");
+        const powerInput = document.getElementById("power");
+        const angleValue = document.getElementById("angleValue");
+        const powerValue = document.getElementById("powerValue");
+
+        const hoop = {
+            x: 292,
+            y: 120,
+            width: 88,
+            height: 10,
+            rimRadius: 4,
+            netHeight: 28
+        };
+
+        const ballRadius = 12;
+        let score = 0;
+        let shotActive = false;
+        let position;
+        let velocity;
+        let animationFrame;
+
+        function resetBall() {
+            position = { x: 80, y: 342 };
+            velocity = { x: 0, y: 0 };
+            shotActive = false;
+            statusText.textContent = "Choose angle and power";
+            drawScene();
+        }
+
+        function updateLabels() {
+            angleValue.textContent = `${angleInput.value}°`;
+            powerValue.textContent = powerInput.value;
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCourt();
+            drawHoop();
+            drawBall();
+        }
+
+        function drawCourt() {
+            ctx.fillStyle = "#162027";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "rgba(255,255,255,0.06)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(200, 380, 80, 0, Math.PI, true);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, 378);
+            ctx.lineTo(canvas.width, 378);
+            ctx.stroke();
+        }
+
+        function drawHoop() {
+            ctx.fillStyle = "#d94532";
+            ctx.fillRect(hoop.x, hoop.y, hoop.width, hoop.height);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.84)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(hoop.x + 8, hoop.y + hoop.height);
+            ctx.lineTo(hoop.x + 18, hoop.y + hoop.height + hoop.netHeight);
+            ctx.lineTo(hoop.x + 28, hoop.y + hoop.height);
+            ctx.lineTo(hoop.x + 38, hoop.y + hoop.height + hoop.netHeight);
+            ctx.lineTo(hoop.x + 48, hoop.y + hoop.height);
+            ctx.lineTo(hoop.x + 58, hoop.y + hoop.height + hoop.netHeight);
+            ctx.lineTo(hoop.x + 68, hoop.y + hoop.height);
+            ctx.stroke();
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.fillStyle = "#ffb56b";
+            ctx.arc(position.x, position.y, ballRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#9b4607";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(position.x, position.y, ballRadius - 3, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = "rgba(0,0,0,0.22)";
+            ctx.beginPath();
+            ctx.arc(position.x, position.y, ballRadius - 4, 0, Math.PI);
+            ctx.stroke();
+        }
+
+        function shoot() {
+            if (shotActive) {
+                return;
+            }
+
+            const angle = Number(angleInput.value) * (Math.PI / 180);
+            const power = Number(powerInput.value);
+            const speed = power * 0.85;
+
+            velocity = {
+                x: Math.cos(angle) * speed,
+                y: -Math.sin(angle) * speed
+            };
+
+            shotActive = true;
+            statusText.textContent = "Shooting...";
+            animationFrame = requestAnimationFrame(animateShot);
+        }
+
+        function animateShot() {
+            if (!shotActive) {
+                return;
+            }
+
+            position.x += velocity.x;
+            position.y += velocity.y;
+            velocity.y += 0.55;
+
+            if (hasScored()) {
+                score += 1;
+                scoreText.textContent = `Score: ${score}`;
+                endShot("Nice shot!");
+                return;
+            }
+
+            if (position.y + ballRadius >= 378 || position.x > canvas.width + ballRadius || position.x < -ballRadius) {
+                endShot("Missed. Try again.");
+                return;
+            }
+
+            drawScene();
+            animationFrame = requestAnimationFrame(animateShot);
+        }
+
+        function hasScored() {
+            const inHoopX = position.x > hoop.x + 12 && position.x < hoop.x + hoop.width - 12;
+            const inHoopY = position.y > hoop.y + hoop.height && position.y < hoop.y + hoop.height + hoop.netHeight + 10;
+            return inHoopX && inHoopY && velocity.y > 0;
+        }
+
+        function endShot(message) {
+            shotActive = false;
+            cancelAnimationFrame(animationFrame);
+            statusText.textContent = message;
+            setTimeout(() => {
+                if (!shotActive) {
+                    resetBall();
+                }
+            }, 700);
+        }
+
+        function restartGame() {
+            score = 0;
+            scoreText.textContent = "Score: 0";
+            resetBall();
+        }
+
+        angleInput.addEventListener("input", updateLabels);
+        powerInput.addEventListener("input", updateLabels);
+        shootBtn.addEventListener("click", shoot);
+        restartBtn.addEventListener("click", restartGame);
+
+        document.addEventListener("keydown", (event) => {
+            if (event.code === "Space" && !shotActive) {
+                event.preventDefault();
+                shoot();
+            }
+        });
+
+        updateLabels();
+        resetBall();
+    </script>
+</body>
+
+</html>

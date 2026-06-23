@@ -72,14 +72,33 @@
             margin: 14px auto 18px;
             color: var(--muted);
             font-weight: 800;
+            flex-wrap: wrap;
+        }
+
+        .ball-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .ball-label {
+            color: var(--accent);
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
         .ball-icon {
-            width: 36px;
-            height: 36px;
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #ffd08a, #f28b2e 55%, #b65313 100%);
-            box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.16), 0 4px 14px rgba(0, 0, 0, 0.2);
+            background: radial-gradient(circle at 32% 30%, #ffd08a, #f28b2e 55%, #b65313 100%);
+            box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.18), 0 6px 18px rgba(0, 0, 0, 0.22);
             position: relative;
             flex-shrink: 0;
         }
@@ -87,9 +106,22 @@
         .ball-icon::before {
             content: "";
             position: absolute;
-            inset: 24% 24%;
+            inset: 18% 18%;
             border-radius: 50%;
-            border: 2px solid rgba(95, 43, 11, 0.85);
+            border: 3px solid rgba(95, 43, 11, 0.85);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .ball-icon::after {
+            content: "";
+            position: absolute;
+            inset: 18% 18%;
+            border-radius: 50%;
+            background-image: radial-gradient(circle at 50% 45%, transparent 48%, rgba(0, 0, 0, 0.16) 49%),
+                linear-gradient(90deg, transparent 44%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.2) 55%, transparent 56%),
+                linear-gradient(0deg, transparent 44%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.2) 55%, transparent 56%);
+            background-size: 100% 100%, 100% 1px, 1px 100%;
+            background-repeat: no-repeat;
         }
 
         canvas {
@@ -173,7 +205,10 @@
         <div class="score-row">
             <span id="score">Score: 0</span>
             <span id="bestScore">Best: 0</span>
-            <div class="ball-icon" aria-hidden="true"></div>
+            <div class="ball-display" aria-hidden="true">
+                <div class="ball-icon"></div>
+                <span class="ball-label">Ball</span>
+            </div>
             <span id="status">Choose angle and power</span>
         </div>
 

@@ -9,15 +9,12 @@
     <style>
         :root {
             --bg: #111315;
-            --panel: #1c2126;
             --text: #f5f8fa;
             --muted: #a9b4bc;
             --accent: #35d07f;
             --accent-dark: #26b86c;
             --line: #35404a;
-            --court: #1b2328;
             --hoop: #d94532;
-            --net: rgba(255, 255, 255, 0.84);
         }
 
         * {
@@ -39,7 +36,7 @@
         }
 
         main {
-            width: min(100%, 520px);
+            width: min(100%, 540px);
             text-align: center;
         }
 
@@ -64,73 +61,46 @@
             letter-spacing: 0;
         }
 
-        .score-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin: 14px auto 18px;
+        .score-row,
+        .stats-row {
+            display: grid;
+            gap: 8px;
+            margin: 14px auto;
             color: var(--muted);
             font-weight: 800;
-            flex-wrap: wrap;
         }
 
-        .ball-display {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 4px 8px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.04);
+        .score-row {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .stats-row {
+            grid-template-columns: repeat(3, 1fr);
+            margin-top: -4px;
+        }
+
+        .score-row span,
+        .stats-row span {
+            min-height: 38px;
+            display: grid;
+            place-items: center;
             border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
         }
 
-        .ball-label {
+        #status {
+            grid-column: 1 / -1;
             color: var(--accent);
-            font-size: 0.95rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .ball-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 32% 30%, #ffd08a, #f28b2e 55%, #b65313 100%);
-            box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.18), 0 6px 18px rgba(0, 0, 0, 0.22);
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        .ball-icon::before {
-            content: "";
-            position: absolute;
-            inset: 18% 18%;
-            border-radius: 50%;
-            border: 3px solid rgba(95, 43, 11, 0.85);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-        }
-
-        .ball-icon::after {
-            content: "";
-            position: absolute;
-            inset: 18% 18%;
-            border-radius: 50%;
-            background-image: radial-gradient(circle at 50% 45%, transparent 48%, rgba(0, 0, 0, 0.16) 49%),
-                linear-gradient(90deg, transparent 44%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.2) 55%, transparent 56%),
-                linear-gradient(0deg, transparent 44%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.2) 55%, transparent 56%);
-            background-size: 100% 100%, 100% 1px, 1px 100%;
-            background-repeat: no-repeat;
         }
 
         canvas {
-            width: min(100%, 420px);
+            width: min(100%, 430px);
             aspect-ratio: 1;
             height: auto;
             display: block;
-            margin: 0 auto;
-            background: var(--court);
+            margin: 18px auto 0;
+            background: #162027;
             border: 2px solid var(--line);
             border-radius: 8px;
             box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
@@ -191,6 +161,13 @@
             font-size: 0.95rem;
             line-height: 1.45;
         }
+
+        @media (max-width: 520px) {
+            .score-row,
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -205,18 +182,20 @@
         <div class="score-row">
             <span id="score">Score: 0</span>
             <span id="bestScore">Best: 0</span>
-            <div class="ball-display" aria-hidden="true">
-                <div class="ball-icon"></div>
-                <span class="ball-label">Ball</span>
-            </div>
             <span id="status">Choose angle and power</span>
+        </div>
+
+        <div class="stats-row" aria-label="Shot statistics">
+            <span id="madeShots">Made: 0</span>
+            <span id="attempts">Attempts: 0</span>
+            <span id="accuracy">Accuracy: 0%</span>
         </div>
 
         <canvas id="game" width="400" height="400" aria-label="Basketball shootout court"></canvas>
 
         <div class="controls">
             <div class="control-row">
-                <label for="angle">Angle <span id="angleValue">45°</span></label>
+                <label for="angle">Angle <span id="angleValue">45 deg</span></label>
                 <input id="angle" type="range" min="20" max="70" value="45">
             </div>
             <div class="control-row">
@@ -230,7 +209,7 @@
             <button id="restartBtn" type="button">Reset</button>
         </div>
 
-        <p class="hint">Press Space to shoot, or adjust angle and power before each attempt.</p>
+        <p class="hint">Press Space to shoot. Adjust angle and power to find the clean shot.</p>
     </main>
 
     <script>
@@ -238,6 +217,9 @@
         const ctx = canvas.getContext("2d");
         const scoreText = document.getElementById("score");
         const bestScoreText = document.getElementById("bestScore");
+        const madeShotsText = document.getElementById("madeShots");
+        const attemptsText = document.getElementById("attempts");
+        const accuracyText = document.getElementById("accuracy");
         const statusText = document.getElementById("status");
         const shootBtn = document.getElementById("shootBtn");
         const restartBtn = document.getElementById("restartBtn");
@@ -251,7 +233,6 @@
             y: 120,
             width: 88,
             height: 10,
-            rimRadius: 4,
             netHeight: 30
         };
 
@@ -259,8 +240,11 @@
         const gravity = 0.38;
         const speedFactor = 1.32;
         const bestScoreKey = "basketballBestScore";
+
         let score = 0;
         let bestScore = Number(localStorage.getItem(bestScoreKey)) || 0;
+        let madeShots = 0;
+        let attempts = 0;
         let shotActive = false;
         let scored = false;
         let scoreFrames = 0;
@@ -279,63 +263,40 @@
         }
 
         function updateLabels() {
-            angleValue.textContent = `${angleInput.value}°`;
+            angleValue.textContent = `${angleInput.value} deg`;
             powerValue.textContent = powerInput.value;
+
             if (!shotActive) {
                 drawScene();
             }
         }
 
+        function updateStats() {
+            const accuracy = attempts ? Math.round((madeShots / attempts) * 100) : 0;
+            madeShotsText.textContent = `Made: ${madeShots}`;
+            attemptsText.textContent = `Attempts: ${attempts}`;
+            accuracyText.textContent = `Accuracy: ${accuracy}%`;
+        }
+
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawCourt();
+            drawBackboard();
             drawHoop();
             drawAimGuide();
-            drawNetBack();
             drawBall();
             drawNetFront();
         }
 
-        function drawNetBack() {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(hoop.x + 10, hoop.y + hoop.height + 4);
-            ctx.lineTo(hoop.x + 26, hoop.y + hoop.height + 16);
-            ctx.lineTo(hoop.x + 42, hoop.y + hoop.height + 4);
-            ctx.lineTo(hoop.x + 58, hoop.y + hoop.height + 16);
-            ctx.stroke();
-        }
-
-        function drawNetFront() {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(hoop.x + 8, hoop.y + hoop.height);
-            ctx.lineTo(hoop.x + 14, hoop.y + hoop.height + hoop.netHeight - 2);
-            ctx.lineTo(hoop.x + 22, hoop.y + hoop.height);
-            ctx.moveTo(hoop.x + 28, hoop.y + hoop.height + hoop.netHeight - 2);
-            ctx.lineTo(hoop.x + 38, hoop.y + hoop.height);
-            ctx.moveTo(hoop.x + 48, hoop.y + hoop.height + hoop.netHeight - 2);
-            ctx.lineTo(hoop.x + 58, hoop.y + hoop.height);
-            ctx.moveTo(hoop.x + 68, hoop.y + hoop.height + hoop.netHeight - 2);
-            ctx.lineTo(hoop.x + 76, hoop.y + hoop.height);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(hoop.x + 15, hoop.y + hoop.height + 3);
-            ctx.lineTo(hoop.x + 23, hoop.y + hoop.height + 13);
-            ctx.lineTo(hoop.x + 31, hoop.y + hoop.height + 3);
-            ctx.lineTo(hoop.x + 39, hoop.y + hoop.height + 13);
-            ctx.lineTo(hoop.x + 47, hoop.y + hoop.height + 3);
-            ctx.lineTo(hoop.x + 55, hoop.y + hoop.height + 13);
-            ctx.lineTo(hoop.x + 63, hoop.y + hoop.height + 3);
-            ctx.stroke();
-        }
-
         function drawCourt() {
-            ctx.fillStyle = "#162027";
+            const courtGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            courtGradient.addColorStop(0, "#152630");
+            courtGradient.addColorStop(0.72, "#172329");
+            courtGradient.addColorStop(1, "#223018");
+            ctx.fillStyle = courtGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = "rgba(255,255,255,0.06)";
+
+            ctx.strokeStyle = "rgba(255,255,255,0.07)";
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.arc(200, 380, 80, 0, Math.PI, true);
@@ -346,22 +307,21 @@
             ctx.stroke();
         }
 
+        function drawBackboard() {
+            ctx.fillStyle = "rgba(248, 251, 255, 0.88)";
+            ctx.fillRect(274, 72, 108, 10);
+
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.42)";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(282, 82, 92, 58);
+        }
+
         function drawHoop() {
             ctx.fillStyle = "#d94532";
             ctx.fillRect(hoop.x, hoop.y, hoop.width, hoop.height);
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.84)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(hoop.x + 8, hoop.y + hoop.height);
-            ctx.lineTo(hoop.x + 18, hoop.y + hoop.height + hoop.netHeight);
-            ctx.lineTo(hoop.x + 28, hoop.y + hoop.height);
-            ctx.moveTo(hoop.x + 38, hoop.y + hoop.height + hoop.netHeight);
-            ctx.lineTo(hoop.x + 48, hoop.y + hoop.height);
-            ctx.moveTo(hoop.x + 58, hoop.y + hoop.height + hoop.netHeight);
-            ctx.lineTo(hoop.x + 68, hoop.y + hoop.height);
-            ctx.stroke();
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-            ctx.lineWidth = 1;
+
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
             ctx.moveTo(hoop.x + 10, hoop.y + hoop.height + 5);
             ctx.lineTo(hoop.x + 26, hoop.y + hoop.height + 17);
@@ -370,16 +330,30 @@
             ctx.stroke();
         }
 
+        function drawNetFront() {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(hoop.x + 8, hoop.y + hoop.height);
+            ctx.lineTo(hoop.x + 14, hoop.y + hoop.height + hoop.netHeight);
+            ctx.lineTo(hoop.x + 22, hoop.y + hoop.height);
+            ctx.moveTo(hoop.x + 30, hoop.y + hoop.height + hoop.netHeight);
+            ctx.lineTo(hoop.x + 40, hoop.y + hoop.height);
+            ctx.moveTo(hoop.x + 50, hoop.y + hoop.height + hoop.netHeight);
+            ctx.lineTo(hoop.x + 60, hoop.y + hoop.height);
+            ctx.moveTo(hoop.x + 70, hoop.y + hoop.height + hoop.netHeight);
+            ctx.lineTo(hoop.x + 80, hoop.y + hoop.height);
+            ctx.stroke();
+        }
+
         function drawBall() {
             const shadowY = Math.min(378, position.y + ballRadius + 8);
             const shadowScale = Math.max(0.35, 1 - Math.abs(342 - position.y) / 260);
 
-            ctx.save();
             ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
             ctx.beginPath();
             ctx.ellipse(position.x, shadowY, ballRadius * 1.1 * shadowScale, ballRadius * 0.34 * shadowScale, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.restore();
 
             const ballGradient = ctx.createRadialGradient(
                 position.x - ballRadius * 0.35,
@@ -398,7 +372,6 @@
             ctx.fillStyle = ballGradient;
             ctx.arc(position.x, position.y, ballRadius, 0, Math.PI * 2);
             ctx.fill();
-
             ctx.strokeStyle = "#5f2b0b";
             ctx.lineWidth = 2;
             ctx.stroke();
@@ -410,7 +383,6 @@
 
             ctx.strokeStyle = "rgba(75, 30, 5, 0.85)";
             ctx.lineWidth = 1.5;
-
             ctx.beginPath();
             ctx.moveTo(position.x - ballRadius, position.y);
             ctx.lineTo(position.x + ballRadius, position.y);
@@ -428,7 +400,6 @@
             ctx.beginPath();
             ctx.arc(position.x + ballRadius * 0.72, position.y, ballRadius * 0.78, Math.PI / 2, Math.PI * 1.5);
             ctx.stroke();
-
             ctx.restore();
         }
 
@@ -464,6 +435,9 @@
                 return;
             }
 
+            attempts += 1;
+            updateStats();
+
             const angle = Number(angleInput.value) * (Math.PI / 180);
             const power = Number(powerInput.value);
             const speed = power * speedFactor;
@@ -492,7 +466,9 @@
             if (!scored && hasScored()) {
                 scored = true;
                 score += 1;
+                madeShots += 1;
                 scoreText.textContent = `Score: ${score}`;
+                updateStats();
                 updateBestScore();
                 statusText.textContent = "Nice shot!";
             }
@@ -531,8 +507,11 @@
 
         function restartGame() {
             score = 0;
+            madeShots = 0;
+            attempts = 0;
             scoreText.textContent = "Score: 0";
             bestScoreText.textContent = `Best: ${bestScore}`;
+            updateStats();
             resetBall();
         }
 
@@ -559,6 +538,7 @@
         });
 
         updateLabels();
+        updateStats();
         bestScoreText.textContent = `Best: ${bestScore}`;
         resetBall();
     </script>

@@ -265,19 +265,65 @@
         }
 
         function drawBall() {
+            const shadowY = Math.min(378, position.y + ballRadius + 8);
+            const shadowScale = Math.max(0.35, 1 - Math.abs(342 - position.y) / 260);
+
+            ctx.save();
+            ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
             ctx.beginPath();
-            ctx.fillStyle = "#ffb56b";
+            ctx.ellipse(position.x, shadowY, ballRadius * 1.1 * shadowScale, ballRadius * 0.34 * shadowScale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            const ballGradient = ctx.createRadialGradient(
+                position.x - ballRadius * 0.35,
+                position.y - ballRadius * 0.45,
+                ballRadius * 0.1,
+                position.x,
+                position.y,
+                ballRadius
+            );
+
+            ballGradient.addColorStop(0, "#ffd08a");
+            ballGradient.addColorStop(0.52, "#f28b2e");
+            ballGradient.addColorStop(1, "#b65313");
+
+            ctx.beginPath();
+            ctx.fillStyle = ballGradient;
             ctx.arc(position.x, position.y, ballRadius, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = "#9b4607";
+
+            ctx.strokeStyle = "#5f2b0b";
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(position.x, position.y, ballRadius - 3, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.strokeStyle = "rgba(0,0,0,0.22)";
+
+            ctx.save();
             ctx.beginPath();
-            ctx.arc(position.x, position.y, ballRadius - 4, 0, Math.PI);
+            ctx.arc(position.x, position.y, ballRadius - 1, 0, Math.PI * 2);
+            ctx.clip();
+
+            ctx.strokeStyle = "rgba(75, 30, 5, 0.85)";
+            ctx.lineWidth = 1.5;
+
+            ctx.beginPath();
+            ctx.moveTo(position.x - ballRadius, position.y);
+            ctx.lineTo(position.x + ballRadius, position.y);
             ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(position.x, position.y - ballRadius);
+            ctx.lineTo(position.x, position.y + ballRadius);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(position.x - ballRadius * 0.72, position.y, ballRadius * 0.78, -Math.PI / 2, Math.PI / 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(position.x + ballRadius * 0.72, position.y, ballRadius * 0.78, Math.PI / 2, Math.PI * 1.5);
+            ctx.stroke();
+
+            ctx.restore();
         }
 
         function drawAimGuide() {
